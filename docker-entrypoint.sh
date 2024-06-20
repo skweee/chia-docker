@@ -11,6 +11,12 @@ cd /chia-blockchain || exit 1
 # shellcheck disable=SC1091
 . ./activate
 
+if [[ ${manual_config} == "true" ]]; then
+    # Manual config mode skips everything below and lets you manage your config manually
+    exec "$@"
+    return
+fi
+
 # Set a few overrides if the service variable contains simulator
 if [ -z "${service##*simulator*}" ]; then
     echo "Setting up environment for simulator..."
@@ -216,6 +222,21 @@ if [[ -n ${full_node_peer} ]]; then
   .timelord.full_node_peers[0].port = env(full_node_peer_port) |
   .farmer.full_node_peers[0].host = env(full_node_peer_host) |
   .farmer.full_node_peers[0].port = env(full_node_peer_port)
+  ' "$CHIA_ROOT/config/config.yaml"
+fi
+
+if [[ -n ${trusted_cidrs} ]]; then
+  echo "Changing trusted cidr setting in config.yaml to value: $trusted_cidrs"
+  yq -i '
+  .wallet.trusted_cidrs = env(trusted_cidrs) |
+  .full_node.trusted_cidrs = env(trusted_cidrs)
+  ' "$CHIA_ROOT/config/config.yaml"
+fi
+
+if [[ -n ${xch_spam_amount} ]]; then
+  echo "Setting xch spam amount in config.yaml to value: $xch_spam_amount"
+  yq -i '
+  .wallet.xch_spam_amount = env(xch_spam_amount)
   ' "$CHIA_ROOT/config/config.yaml"
 fi
 
