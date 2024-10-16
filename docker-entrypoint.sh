@@ -6,6 +6,22 @@ if [[ -n "${TZ}" ]]; then
   ln -snf "/usr/share/zoneinfo/$TZ" /etc/localtime && echo "$TZ" > /etc/timezone
 fi
 
+# Install alternate version of chia if source mode is requested
+# Enables testing dev versions of chia-docker in the container even if the version is not published to the container registry
+if [[ -n ${source_ref} ]]; then
+    echo "Installing chia from source for ref: ${source_ref}"
+
+    cd / || exit 1
+    DEBIAN_FRONTEND=noninteractive apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y lsb-release sudo git
+
+    rm -rf /chia-blockchain
+    git clone --recurse-submodules=mozilla-ca https://github.com/Chia-Network/chia-blockchain.git /chia-blockchain
+    cd /chia-blockchain || exit 1
+    git checkout "${source_ref}"
+    /bin/sh ./install.sh -s
+fi
+
 cd /chia-blockchain || exit 1
 
 # shellcheck disable=SC1091
@@ -295,6 +311,12 @@ if [[ ${service} == "harvester" ]]; then
     echo "A farmer peer address, port, and ca path are required."
     exit
   fi
+fi
+
+# Check if any of the env vars start with "chia." or "chia__" and if so, process the config with chia-tools
+if env | grep -qE '^chia(\.|__)'; then
+    echo "Found environment variables starting with 'chia.' or 'chia__' - Running chia-tools"
+    /usr/bin/chia-tools config edit "$CHIA_ROOT/config/config.yaml"
 fi
 
 exec "$@"
