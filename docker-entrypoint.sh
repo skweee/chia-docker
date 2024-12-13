@@ -9,14 +9,16 @@ fi
 # Install alternate version of chia if source mode is requested
 # Enables testing dev versions of chia-docker in the container even if the version is not published to the container registry
 if [[ -n ${source_ref} ]]; then
-    echo "Installing chia from source for ref: ${source_ref}"
+    echo "Installing chia from source:"
+    echo "  repo: ${CHIA_REPO}"
+    echo "  ref:  ${source_ref}"
 
     cd / || exit 1
     DEBIAN_FRONTEND=noninteractive apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y lsb-release sudo git
 
     rm -rf /chia-blockchain
-    git clone --recurse-submodules=mozilla-ca https://github.com/Chia-Network/chia-blockchain.git /chia-blockchain
+    git clone --recurse-submodules=mozilla-ca "$CHIA_REPO" /chia-blockchain
     cd /chia-blockchain || exit 1
     git checkout "${source_ref}"
     /bin/sh ./install.sh -s
@@ -128,7 +130,7 @@ fi
 if [[ -n ${seeder_bootstrap_peers} ]]; then
   echo "Setting seeder.bootstrap_peers to ${seeder_bootstrap_peers}"
   yq -i '
-    .seeder.bootstrap_peers = [env(seeder_bootstrap_peers)]
+    .seeder.bootstrap_peers = (env(seeder_bootstrap_peers) | split(","))
     ' "$CHIA_ROOT/config/config.yaml"
 fi
 
