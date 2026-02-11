@@ -1,5 +1,5 @@
 # CHIA BUILD STEP
-FROM python:3.11-slim AS chia_build
+FROM python:3.13-slim AS chia_build
 
 ARG BRANCH=latest
 ARG COMMIT=""
@@ -28,7 +28,7 @@ FROM mikefarah/yq:4 AS yq
 FROM ghcr.io/chia-network/chia-tools:latest AS chia-tools
 
 # IMAGE BUILD
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 EXPOSE 8555 8444
 
